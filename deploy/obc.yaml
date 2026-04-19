@@ -1,0 +1,9 @@
+---
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: node-debug-collector
+  namespace: node-debug
+spec:
+  generateBucketName: node-debug-collector-
+  storageClassName: rook-ceph-bucket

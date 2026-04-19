@@ -1,0 +1,5 @@
+/node-debug-collector
+/smoketest
+*.test
+*.out
+/vendor/

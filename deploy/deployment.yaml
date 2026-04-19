@@ -1,0 +1,104 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-debug-collector
+  namespace: node-debug
+  labels:
+    app.kubernetes.io/name: node-debug-collector
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: node-debug-collector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: node-debug-collector
+    spec:
+      serviceAccountName: node-debug-collector
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: node-debug-collector
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: collector
+          image: ghcr.io/cullenmcdermott/node-debug-collector:latest # REPLACE with your image
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: node-debug-collector
+            - secretRef:
+                name: node-debug-collector
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: LEASE_TTL
+              value: 30m
+            - name: PROMETHEUS_URL
+              value: http://prometheus.monitoring.svc:9090 # REPLACE with your Prometheus URL
+            - name: OMNI_ENDPOINT
+              value: https://omni.example.com # REPLACE with your Omni endpoint
+            - name: OMNI_CLUSTER
+              value: prod # REPLACE with your cluster name
+            - name: TALOS_PEERS
+              value: "node-1,node-2,node-3" # REPLACE with comma-separated Talos node hostnames
+            # - name: ALLOWED_SA
+            #   value: "system:serviceaccount:prometheus:alertmanager" # REPLACE if your Alertmanager SA differs
+          volumeMounts:
+            - name: omni-sa-key
+              mountPath: /etc/omni
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: omni-sa-key
+          secret:
+            secretName: node-debug-collector-omni
+            items:
+              - key: sa-key
+                path: sa-key
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi

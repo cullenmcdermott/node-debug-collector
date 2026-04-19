@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: node-debug
+resources:
+  - namespace.yaml
+  - obc.yaml
+  - rbac.yaml
+  - external-secret.yaml
+  - service.yaml
+  - deployment.yaml
+  - pdb.yaml
+  - networkpolicy.yaml

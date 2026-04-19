@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-debug-collector
+  namespace: node-debug
+  labels:
+    app.kubernetes.io/name: node-debug-collector
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: node-debug-collector
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
