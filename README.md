@@ -90,15 +90,6 @@ export KO_DOCKER_REPO=ghcr.io/yourorg/node-debug-collector
 ko build .
 ```
 
-## Smoketest
-
-Verify that a service account key can reach the Talos Machine API via the Omni proxy before deploying:
-
-```bash
-export OMNI_ENDPOINT=https://omni.example.com
-go run ./cmd/smoketest <path/to/sa-key> <cluster-name> <node-hostname>
-```
-
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).

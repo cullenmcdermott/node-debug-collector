@@ -35,7 +35,7 @@ func (t *talosCollector) machineClient(ctx context.Context, node string) (machin
 	if err != nil {
 		return nil, func() {}, err
 	}
-	return c.Talos().WithCluster(t.cluster).WithNodes(node), func() { c.Close() }, nil
+	return c.Talos().WithCluster(t.cluster).WithNodes(node), func() { _ = c.Close() }, nil
 }
 
 func writeFile(path string, data []byte) error {

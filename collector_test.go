@@ -21,7 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	authv1 "k8s.io/api/authentication/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
@@ -175,7 +175,7 @@ func TestStreamFilter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var out strings.Builder
-			streamFilter(strings.NewReader(tt.input), &out, tt.needle)
+			_, _ = streamFilter(strings.NewReader(tt.input), &out, tt.needle)
 			if got := out.String(); got != tt.want {
 				t.Errorf("streamFilter(%q) =\n%q\nwant\n%q", tt.needle, got, tt.want)
 			}
@@ -514,12 +514,12 @@ func TestTarGzUpload(t *testing.T) {
 		o.BaseEndpoint = aws.String(srv.URL)
 		o.UsePathStyle = true
 	})
-	uploader := manager.NewUploader(client, func(u *manager.Uploader) {
-		u.PartSize = 1024 * 1024 * 1024
+	uploader := transfermanager.New(client, func(o *transfermanager.Options) {
+		o.PartSizeBytes = 1024 * 1024 * 1024
 	})
 
-	if err := tarGzUpload(context.Background(), dir, uploader, "test-bucket", "test/key.tar.gz"); err != nil {
-		t.Fatalf("tarGzUpload: %v", err)
+	if tarErr := tarGzUpload(context.Background(), dir, uploader, "test-bucket", "test/key.tar.gz"); tarErr != nil {
+		t.Fatalf("tarGzUpload: %v", tarErr)
 	}
 
 	if len(received) == 0 {

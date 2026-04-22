@@ -238,7 +238,7 @@ func (s *server) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "read body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 
 	var payload AlertmanagerPayload
 	if err := json.Unmarshal(body, &payload); err != nil {
@@ -320,11 +320,11 @@ func (s *server) runCollection(ctx context.Context, node, phase string, startsAt
 		log.Error("mkdtemp", "err", err)
 		return
 	}
-	defer os.RemoveAll(workdir)
+	defer func() { _ = os.RemoveAll(workdir) }()
 
-	var errWriter io.Writer = io.Discard
+	var errWriter = io.Discard
 	if errFile, ferr := os.Create(filepath.Join(workdir, "errors.txt")); ferr == nil {
-		defer errFile.Close()
+		defer func() { _ = errFile.Close() }()
 		errWriter = errFile
 	} else {
 		log.Warn("could not create errors.txt", "err", ferr)
@@ -333,7 +333,7 @@ func (s *server) runCollection(ctx context.Context, node, phase string, startsAt
 		if err == nil {
 			return
 		}
-		fmt.Fprintf(errWriter, "%s: %v\n", where, err)
+		_, _ = fmt.Fprintf(errWriter, "%s: %v\n", where, err)
 		log.Warn("collector error", "source", where, "err", err)
 	}
 

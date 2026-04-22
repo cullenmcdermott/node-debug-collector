@@ -72,7 +72,7 @@ func (o *omniCollector) dumpResource(ctx context.Context, resType resource.Type,
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	data, listErr := listToYAML(ctx, c.Omni().State(), resType)
 	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
@@ -97,7 +97,7 @@ func (o *omniCollector) collectMachineStatusResources(ctx context.Context, dir s
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	st := c.Omni().State()
 

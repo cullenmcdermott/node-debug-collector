@@ -82,20 +82,20 @@ func (c *k8sCollector) collectOnePeerTarget(ctx context.Context, deadNode string
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 	for _, p := range pods.Items {
 		if p.Spec.NodeName == deadNode {
 			continue
 		}
-		fmt.Fprintf(out, "===== pod %s/%s (node %s) =====\n", p.Namespace, p.Name, p.Spec.NodeName)
+		_, _ = fmt.Fprintf(out, "===== pod %s/%s (node %s) =====\n", p.Namespace, p.Name, p.Spec.NodeName)
 		opts := &corev1.PodLogOptions{SinceSeconds: &since}
 		stream, lerr := c.client.CoreV1().Pods(p.Namespace).GetLogs(p.Name, opts).Stream(ctx)
 		if lerr != nil {
-			fmt.Fprintf(out, "(stream error: %v)\n", lerr)
+			_, _ = fmt.Fprintf(out, "(stream error: %v)\n", lerr)
 			continue
 		}
 		_, _ = streamFilter(stream, out, deadNode)
-		stream.Close()
+		_ = stream.Close()
 	}
 	return nil
 }

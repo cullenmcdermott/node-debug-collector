@@ -9,14 +9,14 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // S3Storage wraps an S3 client + pre-bound bucket for archive uploads.
 type S3Storage struct {
 	Client   *s3.Client
-	Uploader *manager.Uploader
+	Uploader *transfermanager.Client
 	Bucket   string
 }
 
@@ -57,7 +57,7 @@ func newS3Storage(ctx context.Context) (*S3Storage, error) {
 
 	return &S3Storage{
 		Client:   client,
-		Uploader: manager.NewUploader(client),
+		Uploader: transfermanager.New(client),
 		Bucket:   bucket,
 	}, nil
 }

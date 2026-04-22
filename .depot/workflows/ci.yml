@@ -8,25 +8,60 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
+    env:
+      FLOX_DISABLE_METRICS: "true"
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: cachix/install-nix-action@v31
         with:
-          go-version-file: go.mod
-          cache: true
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+
+      - name: Restore Nix store cache
+        uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '.flox/env/manifest.toml') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          save: false
+
+      - name: Install Flox
+        run: |
+          . /home/runner/.nix-profile/etc/profile.d/nix.sh
+          nix profile install \
+            --experimental-features "nix-command flakes" \
+            --accept-flake-config \
+            'github:flox/flox/v1.11.0'
+
+      - name: Activate Flox environment
+        run: |
+          . ~/.nix-profile/etc/profile.d/nix.sh
+          flox activate -vv -- true
 
       - name: Build
-        run: go build ./...
+        run: flox activate -- go build ./...
 
       - name: Vet
-        run: go vet ./...
+        run: flox activate -- go vet ./...
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+        run: flox activate -- golangci-lint run ./...
 
       - name: Test
-        run: go test -race -count=1 ./...
+        run: flox activate -- go test -race -count=1 ./...
+
+      - name: Fix Nix permissions for caching
+        if: always()
+        run: sudo chmod -R a+r /nix && sudo find /nix -type d -exec chmod a+rx {} +
+
+      - name: Save Nix store cache
+        if: always()
+        uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '.flox/env/manifest.toml') }}
+          lookup-only: true
+          gc-max-store-size-linux: 5G
+          purge: true
+          purge-prefixes: nix-${{ runner.os }}-
+          purge-last-accessed: P1DT12H
+          purge-primary-key: never

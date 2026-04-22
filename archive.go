@@ -11,16 +11,15 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 )
 
 // tarGzUpload streams a tar+gzip of srcDir directly into an S3 object.
 // The archive is never materialized on disk or fully in memory — io.Pipe
 // connects the tar writer goroutine to the S3 uploader's multipart reader.
-func tarGzUpload(ctx context.Context, srcDir string, uploader *manager.Uploader, bucket, key string) error {
+func tarGzUpload(ctx context.Context, srcDir string, uploader *transfermanager.Client, bucket, key string) error {
 	pr, pw := io.Pipe()
-	defer pr.Close() // unblocks write goroutine if Upload returns early (e.g. context cancelled)
+	defer func() { _ = pr.Close() }() // unblocks write goroutine if Upload returns early (e.g. context cancelled)
 
 	go func() {
 		gw := gzip.NewWriter(pw)
@@ -52,7 +51,7 @@ func tarGzUpload(ctx context.Context, srcDir string, uploader *manager.Uploader,
 			if oerr != nil {
 				return oerr
 			}
-			defer src.Close()
+			defer func() { _ = src.Close() }()
 			if _, err := io.Copy(tw, src); err != nil {
 				return fmt.Errorf("copy %s: %w", rel, err)
 			}
@@ -71,7 +70,7 @@ func tarGzUpload(ctx context.Context, srcDir string, uploader *manager.Uploader,
 		pw.CloseWithError(err)
 	}()
 
-	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
+	_, err := uploader.UploadObject(ctx, &transfermanager.UploadObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(key),
 		Body:        pr,
