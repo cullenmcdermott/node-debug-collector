@@ -13,7 +13,9 @@
         "pkg-path": "ko"
       }
     },
-    "hook": {},
+    "hook": {
+      "on-activate": "export GOENV=\"${GOENV:-${FLOX_ENV_CACHE:-/tmp}/goenv}\"\nexport GOCACHE=\"${GOCACHE:-${FLOX_ENV_CACHE:-/tmp}/go-build}\"\nexport GOMODCACHE=\"${GOMODCACHE:-${FLOX_ENV_CACHE:-/tmp}/go/pkg/mod}\"\nmkdir -p \"$GOENV\" \"$GOCACHE\" \"$GOMODCACHE\"\n"
+    },
     "profile": {},
     "options": {}
   },

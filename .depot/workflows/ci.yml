@@ -11,6 +11,9 @@ jobs:
     runs-on: depot-ubuntu-24.04
     env:
       FLOX_DISABLE_METRICS: "true"
+      GOMODCACHE: /home/runner/.cache/go/pkg/mod
+      GOLANGCI_LINT_CACHE: /home/runner/.cache/golangci-lint
+      GOCACHEPROG: depot gocache
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +27,16 @@ jobs:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '.flox/env/manifest.toml') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           save: false
+
+      - name: Cache Go dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/runner/.cache/go/pkg/mod
+            /home/runner/.cache/golangci-lint
+          key: go-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-
 
       - name: Install Flox
         run: |
